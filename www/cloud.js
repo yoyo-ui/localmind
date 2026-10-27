@@ -48,7 +48,7 @@ async function kaggleLaunch(nb){
   if(!u||!k)throw new Error("Add your Kaggle username and API key under Accounts first.");
   const r=await nfetch("https://www.kaggle.com/api/v1/kernels/push",{method:"POST",
     headers:{Authorization:k.startsWith("KGAT_")?"Bearer "+k:"Basic "+btoa(u+":"+k)},
-    json:{id:u+"/localmind-server",title:"LocalMind Server",text:JSON.stringify(nb),language:"python",kernelType:"notebook",
+    json:{slug:u+"/localmind-server",newTitle:"LocalMind Server",text:JSON.stringify(nb),language:"python",kernelType:"notebook",
       isPrivate:true,enableGpu:true,enableInternet:true,enableTpu:false,datasetDataSources:[],competitionDataSources:[],
       kernelDataSources:[],modelDataSources:[],categoryIds:[]}});
   let j={};try{j=JSON.parse(r.text)}catch(_){}

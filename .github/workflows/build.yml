@@ -4,33 +4,72 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+env:
+  VERSION: 1.0.${{ github.run_number }}
 jobs:
   android:
     runs-on: ubuntu-latest
+    env:
+      KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+      KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
+      - name: Stamp version
+        run: |
+          echo 'window.LM_VERSION={version:"'"$VERSION"'",repo:"${{ github.repository }}"};' > www/version.js
       - run: npm install
       - run: npx cap add android
       - run: npx capacitor-assets generate --android
       - run: npx cap sync android
-      - run: cd android && ./gradlew assembleDebug --no-daemon
-      - run: cp android/app/build/outputs/apk/debug/app-debug.apk LocalMind.apk
+      - name: Android version numbers
+        run: |
+          sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"$VERSION\"/" android/app/build.gradle
+      - name: Build APK
+        run: |
+          cd android
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            cat >> app/build.gradle <<GRADLE
+          android {
+              signingConfigs { release { storeFile file(System.getenv("KS_FILE")); storePassword System.getenv("KS_PASS"); keyAlias System.getenv("KS_ALIAS"); keyPassword System.getenv("KS_PASS") } }
+              buildTypes { release { signingConfig signingConfigs.release } }
+          }
+          GRADLE
+            KS_FILE="$RUNNER_TEMP/release.jks" ./gradlew assembleRelease --no-daemon
+            cp app/build/outputs/apk/release/app-release.apk ../LocalMind.apk
+          else
+            ./gradlew assembleDebug --no-daemon
+            cp app/build/outputs/apk/debug/app-debug.apk ../LocalMind.apk
+          fi
       - uses: actions/upload-artifact@v4
         with: { name: android, path: LocalMind.apk }
   windows:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
+      - name: Stamp version
+        run: |
+          echo 'window.LM_VERSION={version:"'"$VERSION"'",repo:"${{ github.repository }}"};' > www/version.js
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
       - run: npm install
-      - run: npm run dist:win
+      - run: npm run dist:win -- -c.publish.provider=github -c.publish.owner=${{ github.repository_owner }} -c.publish.repo=${{ github.event.repository.name }}
       - uses: actions/upload-artifact@v4
-        with: { name: windows, path: dist/*.exe }
+        with:
+          name: windows
+          path: |
+            dist/*.exe
+            dist/latest.yml
+            dist/*.blockmap
   release:
     needs: [android, windows]
     runs-on: ubuntu-latest
@@ -39,7 +78,7 @@ jobs:
         with: { path: out, merge-multiple: true }
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: LocalMind v1.0.${{ github.run_number }}
+          tag_name: v${{ env.VERSION }}
+          name: LocalMind v${{ env.VERSION }}
           generate_release_notes: true
           files: out/*

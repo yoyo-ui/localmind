@@ -1,0 +1,1 @@
+window.LM_VERSION={version:"0.0.0",repo:""};

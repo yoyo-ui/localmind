@@ -28,8 +28,10 @@ select{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px s
 .alt{display:block;width:100%;text-align:left;margin:6px 0;font-size:14px}.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}a{color:var(--ac2)}a.btn{background:var(--sf);color:var(--tx);border:1px solid var(--ln);border-radius:12px;padding:8px 14px;text-decoration:none}
 .m img{display:block;max-width:220px;max-height:220px;border-radius:12px;margin-bottom:6px}
 #prev{display:none;padding:8px 16px 0}#prev.on{display:flex;align-items:center;gap:8px}#prev img{height:56px;border-radius:10px}#att{padding:8px 12px}
+#upd{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--sf);border-bottom:1px solid var(--ln);font-size:14px}#upd[hidden]{display:none}#upd span{flex:1}
 </style></head><body><div id="app">
 <header><span class="dot" id="dot"></span><h1>LocalMind</h1><button id="new">New</button><button id="mdl">Model</button><button id="cfg">Server</button></header>
+<div id="upd" hidden><span id="updt"></span><button id="updb"></button></div>
 <div id="log"></div>
 <div id="prev"></div>
 <form id="f"><button type="button" id="att" aria-label="Attach photo">📎</button><input type="file" id="file" accept="image/*" hidden><textarea id="q" rows="1" placeholder="Message your model"></textarea><button id="send" type="submit">Send</button></form>
@@ -39,7 +41,13 @@ select{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px s
 <p style="margin:16px 0 0;text-align:right"><button value="x">Save</button></p></form></dialog>
 <dialog id="md"><div><label>Hugging Face link</label><input id="hf" placeholder="https://huggingface.co/owner/model" autocapitalize="off">
 <label>Free GPU</label><select id="gpu"><option value="T4">T4 (free, 16 GB)</option><option value="K2">Kaggle 2×T4 (free, 30 GB)</option><option value="L4">L4 (24 GB, paid Colab)</option><option value="A100">A100 (40 GB, paid Colab)</option></select>
+<details style="margin-top:12px"><summary>Accounts (optional, for one-tap launch)</summary>
+<label>Kaggle username</label><input id="kgu" autocapitalize="off"><label>Kaggle API key</label><input id="kgk" type="password" autocapitalize="off">
+<label>Google OAuth client ID</label><input id="gid" autocapitalize="off"><label>Google OAuth client secret</label><input id="gsec" type="password" autocapitalize="off">
+<p class="note">Saved only on this device. See the README for setup.</p></details>
 <p><button id="gen">Generate notebook</button></p><div id="res"></div><p style="text-align:right;margin:12px 0 0"><button id="mclose">Close</button></p></div></dialog></div>
+<script src="version.js"></script>
+<script src="cloud.js"></script>
 <script src="colab.js"></script>
 <script>
 const $=i=>document.getElementById(i),S=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k)||"";localStorage.setItem(k,v)}catch(e){return ""}};
@@ -80,5 +88,7 @@ $("f").onsubmit=async e=>{
  out.classList.remove("live");if(txt)hist.push({role:"assistant",content:txt});
  busy=false;$("send").textContent="Send";
 };
-empty();if(base())ping();
-</script></body></html>
+window.lmConnect=(u,k)=>{S("url",u);S("key",k);ping().then(()=>{if(!hist.length){log.innerHTML="";add("a","Server connected. Say hi!")}})};
+empty();if(base())ping();if(S("lm_ch"))LM.listen();
+</script>
+<script src="update.js"></script></body></html>

@@ -36,7 +36,7 @@ The notebook starts an OpenAI-compatible server and prints a **Server URL** and 
 4. **Connect.** When the cell finishes it prints `Server URL` and `API key`. Paste both under **Server** in the app.
 5. **Chat.**
 
-The first run builds llama.cpp for your GPU, which takes about 8 minutes. Model download time depends on its size.
+The first run builds llama.cpp for your GPU, which takes about 15 to 25 minutes. Model download time depends on its size.
 
 ## Picking a model
 
@@ -69,6 +69,29 @@ npm install
 npm start            # run the desktop app
 npm run dist:win     # build the Windows installer
 ```
+
+## Auto-connect
+
+When the notebook finishes it sends the Server URL and API key to a private channel on ntfy.sh, **encrypted** with a key that only your app and your notebook share. The app listens and fills in the Server screen by itself. Copy and paste still works if it doesn't.
+
+## One-tap launch (optional)
+
+Open **Model > Accounts** in the app.
+
+- **Kaggle:** enter your username and an API key (kaggle.com > Settings > API > Create New Token). **Launch on Kaggle** then creates a private notebook with GPU and Internet on and runs it. It keeps running until you stop it on Kaggle, and it uses your weekly GPU hours.
+- **Google Drive:** needs a one-time Google Cloud setup. Create a project, enable the **Google Drive API**, set up the OAuth consent screen (add yourself as a test user), then create an OAuth client of type **TVs and Limited Input devices**. Paste the client ID and secret into the app. **Save to Drive + open Colab** shows a code to enter at google.com/device, then saves the notebook to your Drive. You still press Run all in Colab yourself.
+
+## Auto-update
+
+The repo must be **public** for this to work.
+
+- **Windows (installer):** updates itself from GitHub Releases and shows a "Restart" button when ready. The portable .exe can't self-update, so it only shows a download link.
+- **Android:** the app checks for a newer release and shows a banner with the APK download. Android then asks you to install it.
+- **Android updates need a fixed signing key,** otherwise each build is signed differently and Android refuses to install it over the old one. One-time setup:
+  1. `keytool -genkeypair -v -keystore localmind.jks -alias localmind -keyalg RSA -keysize 2048 -validity 10000` (use the same password for the store and the key)
+  2. Turn the file into text: `base64 -w0 localmind.jks` (PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("localmind.jks"))`)
+  3. In the repo, go to Settings > Secrets and variables > Actions and add `ANDROID_KEYSTORE_B64` (that text), `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS` (`localmind`).
+  4. Keep `localmind.jks` safe and never commit it. Without the secrets the build still works but makes a debug APK that can't update over an older install.
 
 ## Project layout
 

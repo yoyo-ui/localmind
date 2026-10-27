@@ -47,21 +47,51 @@ async function alternatives(info){
   return(await r.json()).filter(m=>m.id!==info.id&&m.id.toLowerCase().includes(key))
     .sort((a,b)=>(info.uncens?un.test(b.id)-un.test(a.id):0)||(b.downloads||0)-(a.downloads||0)).slice(0,6);
 }
-function cells(i){
+function cells(i,ex){
   const g=GPUS[i.gpu],ctx=g.v<20?4096:8192,gguf=i.kind==="gguf",c=[];
-  const cf="!wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cf && chmod +x cf";
-  c.push(gguf?["# 1) Build llama.cpp for this GPU (about 8 minutes)",
-    "!git clone -q --depth 1 https://github.com/ggml-org/llama.cpp",
-    "!cmake -S llama.cpp -B llama.cpp/build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES="+g.a+" -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release > /dev/null",
-    "!cmake --build llama.cpp/build -j --target llama-server 2>&1 | tail -n 2",cf].join("\n")
-    :["# 1) Install vLLM","!pip -q install vllm",cf].join("\n"));
+  const chk=String.raw`import os, glob, shutil, subprocess
+def sh(c):
+    r = subprocess.run(c, shell=True, text=True, capture_output=True)
+    if r.returncode: raise SystemExit("Failed: " + c + "\n" + (r.stdout + r.stderr)[-1500:])
+if subprocess.run("nvidia-smi -L", shell=True, capture_output=True).returncode:
+    raise SystemExit("No GPU found. Runtime > Change runtime type > pick a GPU, then run again.")`;
+  const cfp='sh("wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O cf && chmod +x cf")';
+  c.push(gguf?"# 1) Build llama.cpp for this GPU (about 15 to 25 minutes)\n"+chk+"\n"+String.raw`nv = glob.glob("/usr/local/cuda*/bin/nvcc")
+if not shutil.which("nvcc") and nv:
+    os.environ["PATH"] = os.path.dirname(sorted(nv)[-1]) + ":" + os.environ["PATH"]
+if not shutil.which("nvcc"):
+    raise SystemExit("No CUDA compiler (nvcc) on this runtime. Disconnect and delete the runtime, reconnect with a GPU, or use Kaggle.")
+try:
+    arch = subprocess.check_output("nvidia-smi --query-gpu=compute_cap --format=csv,noheader", shell=True, text=True).split()[0].replace(".", "")
+except Exception:
+    arch = "${g.a}"
+sh("rm -rf llama.cpp && git clone -q --depth 1 https://github.com/ggml-org/llama.cpp")
+sh(f"cmake -S llama.cpp -B llama.cpp/build -DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES={arch} -DLLAMA_CURL=OFF -DCMAKE_BUILD_TYPE=Release")
+sh("cmake --build llama.cpp/build -j 2 --target llama-server")
+`+cfp+'\nprint("Build done.")'
+    :"# 1) Install vLLM\n"+chk+'\nsh("python -m pip -q install vllm")\n'+cfp+'\nprint("Install done.")');
   const dl=gguf?"from huggingface_hub import hf_hub_download\nMODEL = hf_hub_download("+JSON.stringify(i.id)+", "+JSON.stringify(i.file)+")"+(i.mmproj?"\nMMPROJ = hf_hub_download("+JSON.stringify(i.id)+", "+JSON.stringify(i.mmproj)+")":"")
     :"from huggingface_hub import snapshot_download\nsnapshot_download("+JSON.stringify(i.id)+")";
   c.push("# 2) Download the model\n"+(i.gated?"from huggingface_hub import login\nlogin()  # gated model: paste your Hugging Face token\n":"")+dl);
-  const cmd=gguf?`["llama.cpp/build/bin/llama-server","-m",MODEL,${i.mmproj?'"--mmproj",MMPROJ,':""}"-ngl","99",${g.n>1?'"-ts","1,1",':""}"-c","${ctx}","--host","127.0.0.1","--port","8000","--api-key",KEY]`
-    :`["vllm","serve",${JSON.stringify(i.id)},"--max-model-len","${ctx}","--dtype","half",${g.n>1?'"--tensor-parallel-size","2",':""}"--port","8000","--api-key",KEY]`;
+  const ts=gguf?'TS = ["-ts", ",".join(["1"] * ngpu)] if ngpu > 1 else []':'TS = ["--tensor-parallel-size", str(ngpu)] if ngpu > 1 else []';
+  const cmd=gguf?`["llama.cpp/build/bin/llama-server","-m",MODEL,${i.mmproj?'"--mmproj",MMPROJ,':""}"-ngl","99"]+TS+["-c","${ctx}","--host","127.0.0.1","--port","8000","--api-key",KEY]`
+    :`["vllm","serve",${JSON.stringify(i.id)},"--max-model-len","${ctx}","--dtype","half"]+TS+["--port","8000","--api-key",KEY]`;
+  const consts=ex?"CHANNEL = "+JSON.stringify(ex.ch)+"\nSECRET = "+JSON.stringify(ex.sec)+"\n":"";
+  const post=ex?String.raw`
+if m:
+    try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        n = os.urandom(12)
+        ct = AESGCM(base64.urlsafe_b64decode(SECRET + "=" * (-len(SECRET) % 4))).encrypt(n, json.dumps({"url": m.group(0), "key": KEY}).encode(), None)
+        urllib.request.urlopen(urllib.request.Request("https://ntfy.sh/" + CHANNEL, data=base64.b64encode(n + ct), method="POST"), timeout=10)
+        print("Sent to the app. It connects by itself.")
+    except Exception as e:
+        print("Auto-connect failed, paste the URL and key by hand:", e)`:"";
+  const keep=g.k?'\nprint("Server is running. Keep this notebook running.")\nwhile True:\n    time.sleep(60)':"";
   c.push(String.raw`# 3) Start the server and the public link
-import subprocess, secrets, re, time, urllib.request
+import os, subprocess, secrets, re, time, urllib.request, json, base64
+`+consts+String.raw`ngpu = len(subprocess.run("nvidia-smi -L", shell=True, capture_output=True, text=True).stdout.strip().splitlines())
+${ts}
 KEY = secrets.token_urlsafe(16)
 subprocess.Popen(${cmd}, stdout=open("server.log","w"), stderr=subprocess.STDOUT)
 for _ in range(240):
@@ -79,7 +109,7 @@ for _ in range(60):
     if m: break
     time.sleep(1)
 print("Server URL:", m.group(0) if m else "not ready, run this cell again")
-print("API key:   ", KEY)`);
+print("API key:   ", KEY)`+post+keep);
   if(g.k)c[0]="# Kaggle: Settings > Accelerator: GPU T4 x2, Internet: On\n"+c[0];
   return c;
 }
@@ -89,34 +119,43 @@ const $=i=>document.getElementById(i);
 function el(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
 function btn(t,f){const b=el("button",null,t);b.onclick=f;return b}
 let runs=0;
+function nbJSON(i){return{cells:cells(i,LM.ident()).map(x=>({cell_type:"code",metadata:{},execution_count:null,outputs:[],source:x.split("\n").map((l,k,a)=>k<a.length-1?l+"\n":l)})),
+  metadata:{accelerator:"GPU",kernelspec:{name:"python3",display_name:"Python 3"}},nbformat:4,nbformat_minor:0}}
 function show(i){
-  runs++;
+  runs++;LM.listen();
   const r=$("res");r.replaceChildren();
   i.notes.forEach(n=>r.appendChild(el("p","warn",n)));
   if(i.kind==="apple"){
-    const box=el("div"),stamp=++runs;box.appendChild(el("p","note","Looking for versions that run on free GPUs…"));r.appendChild(box);
+    const box=el("div"),stamp=runs;box.appendChild(el("p","note","Looking for versions that run on free GPUs…"));r.appendChild(box);
+    const fb=()=>{box.replaceChildren();const a=el("a",null,"Search Hugging Face for a GGUF version");a.href=i.search;a.target="_blank";a.rel="noopener";box.appendChild(a)};
     alternatives(i).then(list=>{
       if(stamp!==runs)return;box.replaceChildren();
-      if(!list.length){const a=el("a",null,"Search Hugging Face for a GGUF version");a.href=i.search;a.target="_blank";a.rel="noopener";box.appendChild(a);return}
+      if(!list.length)return fb();
       box.appendChild(el("p","note","Tap one to build the notebook for it:"));
       list.forEach(m=>{const b=btn(m.id+" · "+(m.downloads||0).toLocaleString()+" downloads",()=>{$("hf").value=m.id;$("gen").click()});b.className="alt";box.appendChild(b)});
-    }).catch(()=>{box.replaceChildren();const a=el("a",null,"Search Hugging Face for a GGUF version");a.href=i.search;a.target="_blank";a.rel="noopener";box.appendChild(a)});
+    }).catch(fb);
     return}
   r.appendChild(el("p","note",i.id+" · "+(i.kind==="gguf"?i.file+" ("+i.size.toFixed(1)+" GB)":"full weights via vLLM")+" · "+i.gpu+(i.vision?" · photos OK":" · text only")));
-  const code=cells(i).join("\n\n"),row=el("div","row");
+  const row=el("div","row"),msg=el("p","note"),k=GPUS[i.gpu].k;
+  const say=(t,u)=>{msg.className="note";msg.textContent=t+" ";if(u){const a=el("a",null,"Open");a.href=u;a.target="_blank";a.rel="noopener";msg.append(a)}};
+  const go=f=>async()=>{say("Working…");try{await f()}catch(e){msg.className="warn";msg.textContent=e.message}};
+  row.appendChild(btn(k?"Launch on Kaggle":"Save to Drive + open Colab",go(async()=>{
+    if(k)say("Started on Kaggle. It takes 15 to 25 minutes, then the app connects by itself. Stop it on Kaggle when you're done.",await LM.kaggleLaunch(nbJSON(i)));
+    else{const t=await LM.googleToken(say);say("Saved to your Drive. Open it, set a GPU runtime, press Run all.",await LM.drivePush("LocalMind_"+i.id.split("/")[1]+".ipynb",nbJSON(i),t))}
+  })));
   row.appendChild(btn("Copy code",async()=>{
+    const code=cells(i,LM.ident()).join("\n\n");
     try{await navigator.clipboard.writeText(code)}catch(e){const t=el("textarea");t.value=code;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove()}
-    msg.textContent="Copied. Paste it into one cell of a new notebook and run it."}));
+    say("Copied. Paste it into one cell of a new notebook and run it.")}));
   if(!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()))
     row.appendChild(btn("Download .ipynb",()=>{
-      const nb={cells:cells(i).map(s=>({cell_type:"code",metadata:{},execution_count:null,outputs:[],source:s.split("\n").map((l,k,a)=>k<a.length-1?l+"\n":l)})),
-        metadata:{accelerator:"GPU",kernelspec:{name:"python3",display_name:"Python 3"}},nbformat:4,nbformat_minor:0};
-      const a=el("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(nb)],{type:"application/json"}));
+      const a=el("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(nbJSON(i))],{type:"application/json"}));
       a.download="LocalMind_"+i.id.split("/")[1]+".ipynb";a.click()}));
-  const k=GPUS[i.gpu].k,oc=el("a","btn",k?"Open Kaggle":"Open Colab");oc.href=k?"https://www.kaggle.com/code":"https://colab.new";oc.target="_blank";oc.rel="noopener";row.appendChild(oc);
-  r.appendChild(row);const msg=el("p","note");r.appendChild(msg);
-  r.appendChild(el("p","note",(k?"On Kaggle (needs a phone-verified account): new notebook, set Accelerator to GPU T4 x2 and Internet to On, then run it. ":"Run it on a GPU runtime. ")+"When it finishes it prints the Server URL and API key. Paste them under Server."));
+  const oc=el("a","btn",k?"Open Kaggle":"Open Colab");oc.href=k?"https://www.kaggle.com/code":"https://colab.new";oc.target="_blank";oc.rel="noopener";row.appendChild(oc);
+  r.appendChild(row);r.appendChild(msg);
+  r.appendChild(el("p","note",(k?"By hand on Kaggle (needs a phone-verified account): new notebook, Accelerator GPU T4 x2, Internet On, then run. ":"By hand: run it on a GPU runtime. ")+"When the server is ready the app connects by itself. If it doesn't, paste the printed Server URL and API key under Server."));
 }
+[["kgu","kg_user"],["kgk","kg_key"],["gid","g_id"],["gsec","g_secret"]].forEach(([id,k])=>{const e=$(id);e.value=LM.ls(k);e.oninput=()=>LM.ls(k,e.value)});
 $("mdl").onclick=()=>$("md").showModal();
 $("mclose").onclick=()=>$("md").close();
 $("gen").onclick=async()=>{

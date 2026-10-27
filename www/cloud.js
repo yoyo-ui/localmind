@@ -49,7 +49,7 @@ async function kaggleLaunch(nb){
   const r=await nfetch("https://www.kaggle.com/api/v1/kernels/push",{method:"POST",
     headers:{Authorization:k.startsWith("KGAT_")?"Bearer "+k:"Basic "+btoa(u+":"+k)},
     json:{slug:u+"/localmind-server",newTitle:"LocalMind Server",text:JSON.stringify(nb),language:"python",kernelType:"notebook",
-      isPrivate:true,enableGpu:true,enableInternet:true,enableTpu:false,datasetDataSources:[],competitionDataSources:[],
+      isPrivate:true,enableGpu:true,machineShape:"NvidiaTeslaT4Highmem",enableInternet:true,enableTpu:false,datasetDataSources:[],competitionDataSources:[],
       kernelDataSources:[],modelDataSources:[],categoryIds:[]}});
   let j={};try{j=JSON.parse(r.text)}catch(_){}
   const err=j.error||j.errorNullable||(!r.ok&&(j.message||"Kaggle answered "+r.status));

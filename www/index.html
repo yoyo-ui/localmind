@@ -1,94 +1,185 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8">
+<!doctype html><html lang="en" data-theme="dark" data-size="m"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>LocalMind</title>
 <style>
-:root{--bg:#0f1226;--sf:#1a1e3a;--ln:#2a2f55;--tx:#eceefb;--mu:#8e94c2;--ac:#7c6cff;--ac2:#4fd8eb}
-*{box-sizing:border-box}html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,Segoe UI,Roboto,sans-serif}
-#app{display:flex;flex-direction:column;height:100%;max-width:820px;margin:auto;padding-top:env(safe-area-inset-top)}
-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--ln)}
-header h1{font-size:18px;margin:0;flex:1}
-.dot{width:10px;height:10px;border-radius:50%;background:#666}.dot.ok{background:var(--ac2)}
-button{font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:8px 14px}
-button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
-#log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:18px}
-.m{white-space:pre-wrap;word-wrap:break-word;max-width:92%}
-.u{align-self:flex-end;background:var(--ac);padding:10px 14px;border-radius:18px 18px 4px 18px}
-.a{align-self:flex-start}
-.empty{margin:auto;text-align:center;color:var(--mu)}
-form#f{display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--ln)}
-textarea{flex:1;resize:none;max-height:140px;font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:10px 14px}
-#send{background:linear-gradient(135deg,var(--ac),var(--ac2));border:0;color:#0f1226;font-weight:700}
-dialog{background:var(--sf);color:var(--tx);border:1px solid var(--ln);border-radius:18px;width:min(92vw,420px)}
-dialog::backdrop{background:#0009}label{display:block;margin:10px 0 4px;color:var(--mu);font-size:14px}
-input{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:9px 12px}
-@media(prefers-reduced-motion:no-preference){.a.live::after{content:"▍";color:var(--ac2);animation:b 1s steps(2) infinite}}
-@keyframes b{50%{opacity:0}}
-select{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:9px 12px}
-.note{color:var(--mu);font-size:14px;margin:8px 0}.warn{color:#ffb86b;font-size:14px;margin:8px 0}
-.alt{display:block;width:100%;text-align:left;margin:6px 0;font-size:14px}.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}a{color:var(--ac2)}a.btn{background:var(--sf);color:var(--tx);border:1px solid var(--ln);border-radius:12px;padding:8px 14px;text-decoration:none}
+:root{--bg:#0f1226;--sf:#1a1e3a;--sf2:#232850;--ln:#2a2f55;--tx:#eceefb;--mu:#8e94c2;--ac:#7c6cff;--ac2:#4fd8eb;--onac:#0f1226;--wr:#ffb86b;color-scheme:dark}
+:root[data-theme=light]{--bg:#f6f7fd;--sf:#fff;--sf2:#eef0fb;--ln:#dcdff2;--tx:#171a33;--mu:#5d6492;--ac:#5a48e6;--ac2:#0a86a0;--onac:#fff;--wr:#b45f06;color-scheme:light}
+:root[data-size=s]{font-size:14px}:root[data-size=m]{font-size:16px}:root[data-size=l]{font-size:18px}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:1rem/1.55 system-ui,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:820px;margin:auto;padding-top:env(safe-area-inset-top)}
+header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--ln)}
+.brand{display:flex;align-items:center;gap:8px;flex:1;min-width:0}.brand h1{font-size:1.05rem;margin:0}.mark{width:26px;height:26px;flex:none}
+button{font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--ln);border-radius:12px;padding:8px 14px;cursor:pointer}
+button:hover{border-color:var(--ac)}:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+.ib{width:40px;height:40px;padding:0;display:grid;place-items:center}
+.ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pill{display:flex;align-items:center;gap:8px;max-width:44%;padding:6px 12px;border-radius:999px;font-size:.8rem;color:var(--mu)}
+#stt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:#7a7f9e;flex:none}.dot.ok{background:var(--ac2)}
+#upd{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--sf2);border-bottom:1px solid var(--ln);font-size:.85rem}#upd[hidden]{display:none}#upd span{flex:1}
+#log{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:18px}
+.m{max-width:94%;word-wrap:break-word;overflow-wrap:anywhere}.u{align-self:flex-end;white-space:pre-wrap;background:var(--ac);color:var(--onac);padding:10px 14px;border-radius:18px 18px 4px 18px}
+.a{align-self:flex-start;width:100%}.bd{white-space:pre-wrap}.a.live>.bd::after{content:"▍";color:var(--ac2)}
 .m img{display:block;max-width:220px;max-height:220px;border-radius:12px;margin-bottom:6px}
-#prev{display:none;padding:8px 16px 0}#prev.on{display:flex;align-items:center;gap:8px}#prev img{height:56px;border-radius:10px}#att{padding:8px 12px}
-#upd{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--sf);border-bottom:1px solid var(--ln);font-size:14px}#upd[hidden]{display:none}#upd span{flex:1}
-</style></head><body><div id="app">
-<header><span class="dot" id="dot"></span><h1>LocalMind</h1><button id="new">New</button><button id="mdl">Model</button><button id="cfg">Server</button></header>
+code{background:var(--sf2);border-radius:6px;padding:1px 5px;font:.88em ui-monospace,Consolas,monospace}
+.code{position:relative;margin:8px 0;background:var(--sf);border:1px solid var(--ln);border-radius:12px}
+.code pre{margin:0;padding:34px 14px 12px;overflow-x:auto;white-space:pre;font:.85rem/1.5 ui-monospace,Consolas,monospace}
+.cb,.cp{font-size:.75rem;padding:3px 10px;border-radius:8px;color:var(--mu)}.cb{position:absolute;top:6px;right:6px}.cp{margin-top:6px;background:none;border-color:transparent}
+.empty{margin:auto;text-align:center;color:var(--mu);max-width:420px;padding:12px}.empty .mark{width:56px;height:56px;margin-bottom:10px}
+.empty h2{color:var(--tx);font-size:1.3rem;margin:0 0 6px}.chips{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.chip{text-align:left;border-radius:14px;padding:11px 14px;color:var(--tx)}
+#prev{display:none;padding:8px 14px 0}#prev.on{display:flex;align-items:center;gap:8px}#prev img{height:56px;border-radius:10px}
+#f{display:flex;align-items:flex-end;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--ln)}
+.box{flex:1;display:flex;align-items:flex-end;background:var(--sf);border:1px solid var(--ln);border-radius:22px;padding:2px 4px}.box:focus-within{border-color:var(--ac)}
+#q{flex:1;border:0;background:none;resize:none;max-height:140px;padding:10px 6px;color:var(--tx);font:inherit;width:auto}#q:focus-visible{outline:none}
+#att{border:0;background:none}
+#send{background:linear-gradient(135deg,var(--ac),var(--ac2));border:0;color:var(--onac);font-weight:700;border-radius:20px;min-width:68px;height:44px}
+input,select,textarea{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:9px 12px}
+input[type=checkbox]{width:auto}input[type=range]{padding:0;border:0;background:none;accent-color:var(--ac)}
+label{display:block;margin:12px 0 4px;color:var(--mu);font-size:.85rem}label.tog{display:flex;gap:8px;align-items:center}
+.note{color:var(--mu);font-size:.85rem;margin:8px 0}.warn{color:var(--wr);font-size:.85rem;margin:8px 0}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}a{color:var(--ac2)}
+a.btn{background:var(--sf);color:var(--tx);border:1px solid var(--ln);border-radius:12px;padding:8px 14px;text-decoration:none}
+.alt{display:block;width:100%;text-align:left;margin:6px 0;font-size:.85rem}
+dialog{background:var(--sf);color:var(--tx);border:1px solid var(--ln);border-radius:18px;width:min(94vw,460px);max-height:88dvh}dialog::backdrop{background:#0009}
+#set{position:fixed;inset:0;z-index:5;background:var(--bg);display:none;flex-direction:column;padding-top:env(safe-area-inset-top)}#set.on{display:flex}
+.sh{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--ln)}.sh h2{margin:0;font-size:1.1rem}
+.sb{flex:1;overflow-y:auto;padding:14px 14px calc(24px + env(safe-area-inset-bottom));max-width:620px;width:100%;margin:auto}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:14px 16px;margin-bottom:14px}.card h3{margin:0 0 4px;font-size:.95rem}
+.seg{display:flex;gap:6px}.seg button{flex:1;padding:7px 8px}.seg button[aria-pressed=true]{background:var(--ac);color:var(--onac);border-color:var(--ac)}
+@media(prefers-reduced-motion:no-preference){.a.live>.bd::after{animation:b 1s steps(2) infinite}}@keyframes b{50%{opacity:0}}
+</style></head><body>
+<div id="app">
+<header><div class="brand"><svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c6cff"/><stop offset="1" stop-color="#4fd8eb"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#gg)"/><path d="M12 5l1.6 4.4L18 11l-4.4 1.6L12 17l-1.6-4.4L6 11l4.4-1.6z" fill="#fff"/></svg><h1>LocalMind</h1></div>
+<button class="pill" id="stat" aria-live="polite"><span class="dot" id="dot"></span><span id="stt">Not set up</span></button>
+<button class="ib" id="new" aria-label="New chat"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+<button class="ib" id="cfg" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button></header>
 <div id="upd" hidden><span id="updt"></span><button id="updb"></button></div>
 <div id="log"></div>
 <div id="prev"></div>
-<form id="f"><button type="button" id="att" aria-label="Attach photo">📎</button><input type="file" id="file" accept="image/*" hidden><textarea id="q" rows="1" placeholder="Message your model"></textarea><button id="send" type="submit">Send</button></form>
-<dialog id="d"><form method="dialog">
-<label>Server URL (from Colab)</label><input id="url" placeholder="https://xxxx.trycloudflare.com" autocapitalize="off">
-<label>API key</label><input id="key" placeholder="same key as in Colab" autocapitalize="off">
-<p style="margin:16px 0 0;text-align:right"><button value="x">Save</button></p></form></dialog>
-<dialog id="md"><div><label>Hugging Face link</label><input id="hf" placeholder="https://huggingface.co/owner/model" autocapitalize="off">
-<label>Free GPU</label><select id="gpu"><option value="T4">T4 (free, 16 GB)</option><option value="K2">Kaggle 2×T4 (free, 30 GB)</option><option value="L4">L4 (24 GB, paid Colab)</option><option value="A100">A100 (40 GB, paid Colab)</option></select>
-<details style="margin-top:12px"><summary>Accounts (optional, for one-tap launch)</summary>
-<label>Kaggle username</label><input id="kgu" autocapitalize="off"><label>Kaggle API key</label><input id="kgk" type="password" autocapitalize="off">
-<label>Google OAuth client ID</label><input id="gid" autocapitalize="off"><label>Google OAuth client secret</label><input id="gsec" type="password" autocapitalize="off">
-<p class="note">Saved only on this device. See the README for setup.</p></details>
-<p><button id="gen">Generate notebook</button></p><div id="res"></div><p style="text-align:right;margin:12px 0 0"><button id="mclose">Close</button></p></div></dialog></div>
+<form id="f"><div class="box"><button type="button" class="ib" id="att" aria-label="Attach photo"><svg viewBox="0 0 24 24"><path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/></svg></button><input type="file" id="file" accept="image/*" hidden><textarea id="q" rows="1" placeholder="Message your model" aria-label="Message"></textarea></div><button id="send" type="submit">Send</button></form>
+</div>
+
+<section id="set" aria-label="Settings"><div class="sh"><button class="ib" id="sback" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button><h2>Settings</h2></div><div class="sb">
+<div class="card"><h3>Connection</h3>
+<label for="url">Server URL</label><input id="url" placeholder="https://xxxx.trycloudflare.com" autocapitalize="off" autocomplete="off">
+<label for="key">API key</label><input id="key" type="password" autocapitalize="off" autocomplete="off">
+<div class="row"><button id="test">Test connection</button></div><p class="note" id="tmsg"></p>
+<p class="note">When your notebook is ready, the app fills these in by itself.</p></div>
+<div class="card"><h3>Model</h3><p class="note">Paste a Hugging Face link and get a ready notebook for Colab or Kaggle.</p><button id="mdl">Open notebook builder</button></div>
+<div class="card"><h3>Chat</h3>
+<label for="sys">System prompt</label><textarea id="sys" rows="3" placeholder="Optional. Example: Answer briefly."></textarea>
+<p class="note">If the model complains, leave this empty.</p>
+<label for="temp">Creativity: <b id="tv"></b></label><input id="temp" type="range" min="0" max="1.5" step="0.1">
+<label for="maxt">Max reply length in tokens (empty = default)</label><input id="maxt" type="number" min="16" step="16" inputmode="numeric">
+<label class="tog"><input type="checkbox" id="enter"> Press Enter to send (computer keyboards)</label></div>
+<div class="card"><h3>Appearance</h3>
+<label>Theme</label><div class="seg" data-k="theme"><button data-v="dark">Dark</button><button data-v="light">Light</button><button data-v="auto">Auto</button></div>
+<label>Text size</label><div class="seg" data-k="size"><button data-v="s">Small</button><button data-v="m">Medium</button><button data-v="l">Large</button></div></div>
+<div class="card"><h3>Accounts (optional)</h3><p class="note">For one-tap launch on Kaggle and saving to Google Drive. Saved only on this device.</p>
+<label for="kgu">Kaggle username</label><input id="kgu" autocapitalize="off"><label for="kgk">Kaggle API key</label><input id="kgk" type="password" autocapitalize="off">
+<label for="gid">Google OAuth client ID</label><input id="gid" autocapitalize="off"><label for="gsec">Google OAuth client secret</label><input id="gsec" type="password" autocapitalize="off"></div>
+<div class="card"><h3>Data</h3><div class="row"><button id="clr">Clear chat</button><button id="forget">Forget saved keys</button></div></div>
+<div class="card"><h3>About</h3><p class="note" id="ver"></p><div class="row"><button id="chk">Check for updates</button></div><p class="note" id="cmsg"></p></div>
+</div></section>
+
+<dialog id="md"><div><label for="hf">Hugging Face link</label><input id="hf" placeholder="https://huggingface.co/owner/model" autocapitalize="off">
+<label for="gpu">Free GPU</label><select id="gpu"><option value="T4">T4 (free, 16 GB)</option><option value="K2">Kaggle 2×T4 (free, 30 GB)</option><option value="L4">L4 (24 GB, paid Colab)</option><option value="A100">A100 (40 GB, paid Colab)</option></select>
+<p><button id="gen">Generate notebook</button></p><div id="res"></div><p style="text-align:right;margin:12px 0 0"><button id="mclose">Close</button></p></div></dialog>
+
 <script src="version.js"></script>
 <script src="cloud.js"></script>
 <script src="colab.js"></script>
 <script>
 const $=i=>document.getElementById(i),S=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k)||"";localStorage.setItem(k,v)}catch(e){return ""}};
-let hist=[],busy=false,ctl,MODEL,img=null;const log=$("log");
-function empty(){log.innerHTML='<div class="empty">Your model runs on your Colab GPU.<br>Add the server link to start.</div>'}
-function add(c,t){const e=document.createElement("div");e.className="m "+c;e.textContent=t;log.appendChild(e);log.scrollTop=log.scrollHeight;return e}
+const num=(k,d)=>{const v=parseFloat(S(k));return isNaN(v)?d:v};
+let hist=[],busy=false,ctl,MODEL,img=null;const log=$("log"),mq=matchMedia("(prefers-color-scheme: light)");
+function applyLook(){const t=S("theme")||"dark",r=document.documentElement;r.dataset.theme=t==="auto"?(mq.matches?"light":"dark"):t;r.dataset.size=S("size")||"m"}
+if(mq.addEventListener)mq.addEventListener("change",applyLook);applyLook();
 function base(){return S("url").trim().replace(/\/+$/,"")}
 function H(){const h={"Content-Type":"application/json"};if(S("key"))h.Authorization="Bearer "+S("key").trim();return h}
-async function ping(){MODEL=undefined;try{const r=await fetch(base()+"/v1/models",{headers:H()});$("dot").className="dot"+(r.ok?" ok":"");if(r.ok){const j=await r.json();MODEL=j.data&&j.data[0]&&j.data[0].id}}catch(e){$("dot").className="dot"}}
-$("cfg").onclick=()=>{$("url").value=S("url");$("key").value=S("key");$("d").showModal()};
-$("d").onclose=()=>{S("url",$("url").value);S("key",$("key").value);ping()};
-$("new").onclick=()=>{ctl&&ctl.abort();hist=[];empty()};
+async function copyText(t){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();document.execCommand("copy");a.remove()}}
+function flash(b,t){copyText(t);b.textContent="Copied";setTimeout(()=>b.textContent="Copy",1200)}
+function stick(){log.scrollTop=log.scrollHeight}
+// tiny markdown: code blocks, `inline`, **bold**
+function inline(el,t){t.split(/(`[^`\n]+`|\*\*[^*\n]+\*\*)/).forEach(s=>{if(!s)return;
+  if(s[0]==="`"&&s.length>2){const c=document.createElement("code");c.textContent=s.slice(1,-1);el.append(c)}
+  else if(s.startsWith("**")&&s.length>4){const b=document.createElement("strong");b.textContent=s.slice(2,-2);el.append(b)}
+  else el.append(document.createTextNode(s))})}
+function md(el,t){el.replaceChildren();t.split("```").forEach((p,i)=>{
+  if(i%2){const nl=p.indexOf("\n"),code=(nl>=0?p.slice(nl+1):"").replace(/\n$/,""),w=document.createElement("div"),b=document.createElement("button"),pre=document.createElement("pre");
+    w.className="code";b.className="cb";b.type="button";b.textContent="Copy";b.onclick=()=>flash(b,code);pre.textContent=code;w.append(b,pre);el.append(w)}
+  else inline(el,p.replace(/^\n|\n$/g,""))})}
+function addU(t,pic){const e=document.createElement("div");e.className="m u";if(pic){const im=document.createElement("img");im.src=pic;e.append(im)}e.append(document.createTextNode(t));log.append(e);stick()}
+function addA(t){const w=document.createElement("div"),b=document.createElement("div");w.className="m a";b.className="bd";w.append(b);if(t)md(b,t);log.append(w);stick();return{w,b}}
+function finish(a,t){a.w.classList.remove("live");if(!t)return;const c=document.createElement("button");c.className="cp";c.type="button";c.textContent="Copy";c.onclick=()=>flash(c,t);a.w.append(c)}
+function save(){S("lm_hist",JSON.stringify(hist.slice(-60).map(m=>({role:m.role,content:Array.isArray(m.content)?m.content[0].text:m.content}))))}
+function empty(){
+  log.replaceChildren();const d=document.createElement("div");d.className="empty";
+  d.innerHTML='<svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="url(#gg)"/><path d="M12 5l1.6 4.4L18 11l-4.4 1.6L12 17l-1.6-4.4L6 11l4.4-1.6z" fill="#fff"/></svg><h2>Chat with your own model</h2>'+
+   (base()?'<p>Runs on your free cloud GPU. Ask anything or attach a photo.</p><div class="chips"><button class="chip">Explain how a neural network learns</button><button class="chip">Write a Python function that merges two sorted lists</button><button class="chip">Give me 3 ideas for a weekend project</button></div>'
+          :'<p>Connect your server to start. Build a notebook from a Hugging Face link, run it, and the app connects by itself.</p><div class="chips"><button class="chip" id="gs">Open settings</button></div>');
+  log.append(d)}
+log.onclick=e=>{const c=e.target.closest(".chip");if(!c)return;if(c.id==="gs")return openSet();$("q").value=c.textContent;$("q").focus()};
+function status(ok,name){$("dot").className="dot"+(ok?" ok":"");$("stt").textContent=!base()?"Not set up":ok?(name||"Connected"):"Offline"}
+async function ping(){MODEL=undefined;if(!base()){status(false);return false}
+  try{const r=await fetch(base()+"/v1/models",{headers:H()});if(r.ok){const j=await r.json();MODEL=j.data&&j.data[0]&&j.data[0].id}status(r.ok,MODEL&&MODEL.split("/").pop());return r.ok}catch(e){status(false);return false}}
+// settings page
+const set=$("set");
+function openSet(){$("url").value=S("url");$("key").value=S("key");$("sys").value=S("sys");$("temp").value=num("temp",0.7);$("tv").textContent=$("temp").value;$("maxt").value=S("maxt");$("enter").checked=S("enter")!=="0";
+  $("ver").textContent="LocalMind v"+((window.LM_VERSION&&LM_VERSION.version)||"dev");set.classList.add("on")}
+const closeSet=()=>set.classList.remove("on");
+$("cfg").onclick=$("stat").onclick=openSet;$("sback").onclick=closeSet;
+$("url").onchange=()=>{S("url",$("url").value.trim());ping()};$("key").onchange=()=>{S("key",$("key").value.trim());ping()};
+$("sys").oninput=e=>S("sys",e.target.value);$("temp").oninput=e=>{S("temp",e.target.value);$("tv").textContent=e.target.value};
+$("maxt").oninput=e=>S("maxt",e.target.value);$("enter").onchange=e=>S("enter",e.target.checked?"1":"0");
+$("test").onclick=async()=>{S("url",$("url").value.trim());S("key",$("key").value.trim());$("tmsg").textContent="Testing…";
+  const ok=await ping();$("tmsg").textContent=ok?"Connected"+(MODEL?" to "+MODEL.split("/").pop():""):"Can't reach the server. Check the link and the key."};
+$("clr").onclick=()=>{ctl&&ctl.abort();hist=[];S("lm_hist","");empty();closeSet()};
+$("forget").onclick=()=>{if(!confirm("Forget the server link, API key and account details saved on this device?"))return;
+  ["url","key","kg_user","kg_key","g_id","g_secret","g_refresh"].forEach(k=>S(k,""));["url","key","kgu","kgk","gid","gsec"].forEach(i=>$(i).value="");ping().then(()=>{if(!hist.length)empty()})};
+$("chk").onclick=async()=>{$("cmsg").textContent="Checking…";const r=window.lmCheck?await window.lmCheck():"error";
+  $("cmsg").textContent=r==="new"?"A new version is available. See the banner at the top.":r==="latest"?"You're on the latest version.":"Couldn't check. The repo must be public."};
+document.querySelectorAll(".seg").forEach(g=>{const k=g.dataset.k,def=k==="theme"?"dark":"m";
+  const paint=()=>g.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String((S(k)||def)===b.dataset.v)));
+  g.onclick=e=>{const b=e.target.closest("button");if(!b)return;S(k,b.dataset.v);applyLook();paint()};paint()});
+// composer
+$("new").onclick=()=>{ctl&&ctl.abort();hist=[];S("lm_hist","");empty()};
 $("q").oninput=e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px"};
-$("q").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&matchMedia("(pointer:fine)").matches){e.preventDefault();$("f").requestSubmit()}};
+$("q").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&S("enter")!=="0"&&matchMedia("(pointer:fine)").matches){e.preventDefault();$("f").requestSubmit()}};
 $("send").onclick=e=>{if(busy){e.preventDefault();ctl.abort()}};
 $("att").onclick=()=>$("file").click();
 function showPrev(){const p=$("prev");p.replaceChildren();p.className=img?"on":"";if(!img)return;const t=document.createElement("img");t.src=img;const x=document.createElement("button");x.type="button";x.textContent="✕";x.setAttribute("aria-label","Remove photo");x.onclick=()=>{img=null;showPrev()};p.append(t,x)}
 $("file").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
- try{const b=await createImageBitmap(f),k=Math.min(1,1024/Math.max(b.width,b.height)),c=document.createElement("canvas");c.width=Math.round(b.width*k);c.height=Math.round(b.height*k);c.getContext("2d").drawImage(b,0,0,c.width,c.height);img=c.toDataURL("image/jpeg",0.85);showPrev()}catch(_){add("a","Couldn't read that photo.")}};
+  try{const b=await createImageBitmap(f),k=Math.min(1,1024/Math.max(b.width,b.height)),c=document.createElement("canvas");c.width=Math.round(b.width*k);c.height=Math.round(b.height*k);c.getContext("2d").drawImage(b,0,0,c.width,c.height);img=c.toDataURL("image/jpeg",0.85);showPrev()}
+  catch(_){if(!hist.length)log.replaceChildren();addA("Couldn't read that photo.")}};
 $("f").onsubmit=async e=>{
- e.preventDefault();if(busy)return;const t=$("q").value.trim();if(!t&&!img)return;
- if(!base()){$("cfg").click();return}
- if(!MODEL)await ping();
- if(!hist.length)log.innerHTML="";
- const pic=img;img=null;showPrev();$("q").value="";$("q").style.height="auto";
- const ub=add("u",t);if(pic){const im=document.createElement("img");im.src=pic;ub.prepend(im)}
- hist.push({role:"user",content:pic?[{type:"text",text:t||"Describe this photo."},{type:"image_url",image_url:{url:pic}}]:t});
- const out=add("a live","");let txt="";busy=true;$("send").textContent="Stop";ctl=new AbortController();
- try{
-  const r=await fetch(base()+"/v1/chat/completions",{method:"POST",headers:H(),signal:ctl.signal,body:JSON.stringify({model:MODEL,messages:hist.slice(-20).map((m,k,a)=>k<a.length-1&&Array.isArray(m.content)?{role:m.role,content:m.content[0].text}:m),stream:true,temperature:0.7})});
-  if(!r.ok)throw new Error("Server answered "+r.status+". Check the link and key."+(pic?" If you attached a photo, this model may not read images.":""));
-  const rd=r.body.getReader(),dc=new TextDecoder();let buf="";
-  for(;;){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});
-   const ls=buf.split("\n");buf=ls.pop();
-   for(const l of ls){if(!l.startsWith("data:"))continue;const p=l.slice(5).trim();if(p==="[DONE]")continue;
-    try{const c=JSON.parse(p).choices[0].delta.content;if(c){txt+=c;out.textContent=txt;log.scrollTop=log.scrollHeight}}catch(_){}}}
- }catch(err){if(err.name!=="AbortError")out.textContent=txt||("Can't reach the server. "+err.message)}
- out.classList.remove("live");if(txt)hist.push({role:"assistant",content:txt});
- busy=false;$("send").textContent="Send";
+  e.preventDefault();if(busy)return;const t=$("q").value.trim();if(!t&&!img)return;
+  if(!base()){openSet();return}
+  if(!MODEL)await ping();
+  if(!hist.length)log.replaceChildren();
+  const pic=img;img=null;showPrev();$("q").value="";$("q").style.height="auto";
+  addU(t,pic);hist.push({role:"user",content:pic?[{type:"text",text:t||"Describe this photo."},{type:"image_url",image_url:{url:pic}}]:t});save();
+  const a=addA("");a.w.classList.add("live");let txt="";busy=true;$("send").textContent="Stop";ctl=new AbortController();
+  const msgs=hist.slice(-20).map((m,k,x)=>k<x.length-1&&Array.isArray(m.content)?{role:m.role,content:m.content[0].text}:m),sys=S("sys").trim();
+  if(sys)msgs.unshift({role:"system",content:sys});
+  const body={model:MODEL,messages:msgs,stream:true,temperature:num("temp",0.7)},mt=parseInt(S("maxt"));if(mt>0)body.max_tokens=mt;
+  try{
+    const r=await fetch(base()+"/v1/chat/completions",{method:"POST",headers:H(),signal:ctl.signal,body:JSON.stringify(body)});
+    if(!r.ok)throw new Error("Server answered "+r.status+". Check the link and key."+(pic?" If you attached a photo, this model may not read images.":""));
+    const rd=r.body.getReader(),dc=new TextDecoder();let buf="";
+    for(;;){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});
+      const ls=buf.split("\n");buf=ls.pop();
+      for(const l of ls){if(!l.startsWith("data:"))continue;const p=l.slice(5).trim();if(p==="[DONE]")continue;
+        try{const c=JSON.parse(p).choices[0].delta.content;if(c){txt+=c;const n=log.scrollHeight-log.scrollTop-log.clientHeight<140;md(a.b,txt);if(n)stick()}}catch(_){}}}
+  }catch(err){if(err.name!=="AbortError"){a.b.textContent=txt||("Can't reach the server. "+err.message);a.b.style.color="var(--wr)"}}
+  finish(a,txt);if(txt){hist.push({role:"assistant",content:txt});save()}
+  busy=false;$("send").textContent="Send";
 };
-window.lmConnect=(u,k)=>{S("url",u);S("key",k);ping().then(()=>{if(!hist.length){log.innerHTML="";add("a","Server connected. Say hi!")}})};
-empty();if(base())ping();if(S("lm_ch"))LM.listen();
+window.lmConnect=(u,k)=>{S("url",u);S("key",k);$("url").value=u;$("key").value=k;ping().then(()=>{if(!hist.length)empty()})};
+try{hist=JSON.parse(S("lm_hist")||"[]")}catch(e){hist=[]}
+if(hist.length)hist.forEach(m=>{if(m.role==="user")addU(m.content);else{const a=addA(m.content);finish(a,m.content)}});else empty();
+status(false);if(base())ping();if(S("lm_ch"))LM.listen();
 </script>
 <script src="update.js"></script></body></html>

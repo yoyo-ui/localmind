@@ -91,7 +91,12 @@ if m:
   c.push(String.raw`# 3) Start the server and the public link
 import os, subprocess, secrets, re, time, urllib.request, json, base64
 `+consts+String.raw`ngpu = len(subprocess.run("nvidia-smi -L", shell=True, capture_output=True, text=True).stdout.strip().splitlines())
-${ts}
+${ts}${gguf?String.raw`
+vram = sum(int(x) for x in subprocess.check_output("nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits", shell=True, text=True).split()) / 1024
+size = os.path.getsize(MODEL) / 2**30
+print(f"GPUs: {ngpu}, GPU memory: {vram:.1f} GB, model file: {size:.1f} GB")
+if size > vram * 0.9:
+    raise SystemExit(f"This model needs about {size:.1f} GB but the GPU has {vram:.1f} GB. Use a smaller file or a bigger GPU.")`:""}
 KEY = secrets.token_urlsafe(16)
 subprocess.Popen(${cmd}, stdout=open("server.log","w"), stderr=subprocess.STDOUT)
 for _ in range(240):

@@ -23,6 +23,8 @@ The notebook starts an OpenAI-compatible server and prints a **Server URL** and 
   - Warns when a model is too big, low quality at that size, or Apple-only (MLX/JANG)
   - For Apple-only models, searches Hugging Face for GGUF versions that run on free GPUs
 - **GPU choices:** Colab T4 (free, 16 GB), Kaggle 2×T4 (free, 30 GB), L4 or A100 (paid Colab)
+- **Settings page:** server link and key, system prompt, creativity, reply length, theme (dark, light, auto), text size, accounts, clear chat, and update check
+- Chat renders code blocks with a Copy button, and keeps your conversation after you close the app
 - **Photos:** attach a picture with the 📎 button (vision models only)
 - Copy the code into a notebook cell, or download a `.ipynb` on Windows
 

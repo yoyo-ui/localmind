@@ -4,7 +4,7 @@
   "description": "Chat client for open-source models running on Colab",
   "main": "electron/main.js",
   "author": "Joh",
-  "scripts": { "start": "electron .", "dist:win": "electron-builder --win" },
+  "scripts": { "start": "electron .", "dist:win": "electron-builder --win --publish never" },
   "dependencies": {
     "@capacitor/android": "^6.1.0",
     "@capacitor/cli": "^6.1.0",
